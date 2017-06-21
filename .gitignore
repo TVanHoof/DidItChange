@@ -1,0 +1,30 @@
+### C ###
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Libraries
+*.lib
+*.a
+
+# Executables
+*.out
+DidItChange
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# Input Files
+*.txt
+
+# Output Files
+*.html
