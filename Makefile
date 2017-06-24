@@ -1,3 +1,6 @@
+#gcc main.c $(pkg-config --cflags --libs gtk+-3.0) -o DidItChange -lcurl
+
+NAME = DidItChange
 CC = gcc
 GTK_FLAGS = `pkg-config --cflags gtk+-3.0`
 GTK_LIBS = `pkg-config --libs gtk+-3.0`
@@ -13,11 +16,15 @@ RM = rm -rf
 
 .PHONY = clean
 
-DidItChange: $(OBJS)
-	$(CC) $(LD_FLAGS) $(OBJS) -o DidItChange $(LIBCURL)
+$(NAME): $(OBJS)
+	$(CC) $(OBJS) -o $(NAME) $(LD_FLAGS)
 
 $(OUTPUT_DIR)/main.o: main.c
 	$(CC) $(CFLAGS) main.c
 
+#single line works
+#$(NAME): main.c
+	#$(CC) main.c $(CFLAGS) -o $(NAME) $(LD_FLAGS)
+
 clean:
-	$(RM) *.o main
+	$(RM) *.o *.html $(NAME)

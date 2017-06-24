@@ -24,6 +24,19 @@
 #include "stdlib.h"
 #include <string.h>
 #include "curl/curl.h"
+#include <gtk/gtk.h>
+
+
+void v_createPopupWindow(char *pc_textToDisplay)
+{
+	GtkWidget *px_MessageWindow = gtk_window_new(GTK_WINDOW_POPUP);
+	gtk_window_set_title(GTK_WINDOW(px_MessageWindow), "some sites have changed");
+
+	GtkWidget *px_label = gtk_label_new(pc_textToDisplay);
+	gtk_container_add(GTK_CONTAINER(px_MessageWindow), px_label);
+
+	gtk_widget_show_all(px_MessageWindow);
+}/*v_createPopupWindow*/
 
 static size_t s_write_data(void *pv_data, size_t s_size, size_t s_nmemb, void *pv_stream)
 {
@@ -146,7 +159,9 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "file can not be opened\n");
 		exit(EXIT_FAILURE);
-	}/*if(NULL == fp_urls)*/
+	}/*if(NULL == pf_urls)*/
+
+	gtk_init(&argc, &argv);
 
 	/*initialize px_curlHandle*/
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -180,6 +195,8 @@ int main(int argc, char **argv)
 			}/*if(NULL == pf_original)*/
 			else if(0 == i_compareFiles(pf_buffer,pf_original))		/*file does exist and has changed*/
 			{
+				v_createPopupWindow("new popup");
+				printf("generate popup\n");
 				fclose(pf_original);
 				fclose(pf_buffer);
 				rename("buffer.html", pc_filename);
