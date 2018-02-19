@@ -39,6 +39,8 @@ static void v_freeAll(Changed_sites *px_site)
   while( NULL != px_site)
   {
     px_tmp = px_site;
+    free(px_site->pc_name);
+    free(px_site->pc_site);
     px_site = px_site->px_next;
     free(px_tmp);
   }
@@ -57,8 +59,16 @@ void v_createLinkedList(Changed_sites **ppx_sites, char *pc_name, char *pc_strin
         if(NULL != *ppx_sites)
         {
             (*ppx_sites)->px_next = NULL;
-            (*ppx_sites)->pc_site = pc_string;
-            (*ppx_sites)->pc_name = pc_name;
+            (*ppx_sites)->pc_site = malloc(strlen(pc_string));
+            if( NULL != (*ppx_sites)->pc_site )
+            {
+                strcpy((*ppx_sites)->pc_site, pc_string);
+            }
+            (*ppx_sites)->pc_name = malloc(strlen(pc_name));
+            if( NULL != (*ppx_sites)->pc_name )
+            {
+                strcpy((*ppx_sites)->pc_name, pc_name);
+            }
         }
     }
     else
@@ -69,8 +79,16 @@ void v_createLinkedList(Changed_sites **ppx_sites, char *pc_name, char *pc_strin
         if(NULL != px_sites->px_next)
         {
             px_sites->px_next->px_next = NULL;
-            px_sites->px_next->pc_site = pc_string;
-            px_sites->px_next->pc_name = pc_name;
+            (*ppx_sites)->pc_site = malloc(strlen(pc_string));
+            if( NULL != (*ppx_sites)->pc_site )
+            {
+                strcpy((*ppx_sites)->pc_site, pc_string);
+            }
+            (*ppx_sites)->pc_name = malloc(strlen(pc_name));
+            if( NULL != (*ppx_sites)->pc_name )
+            {
+                strcpy((*ppx_sites)->pc_name, pc_name);
+            }
         }
     }
 }/*v_createLinkedList*/
@@ -204,7 +222,7 @@ int main(int argc, char **argv)
                 rename("buffer.html", pc_filename);
                 fclose(pf_original);
                 fclose(pf_buffer);
-            }/*else if(0 != i_compareFiles(pf_buffer, pf_original))*/
+            }/*else if(0 == i_compareFiles(pf_buffer, pf_original))*/
             else                                                    /*file does exist but has not changed*/
             {
                 fclose(pf_buffer);
