@@ -49,7 +49,7 @@ class Window:
         gtk.main()
     def push_button(self ,widget, data=None):
         print "Button %s has been pushed" % data
-    def delete_event(self, wdiget, event, data=None):
+    def delete_event(self, widget, event, data=None):
         return False #destroy
     def destroy(self, widget, data=None):
         gtk.main_quit()
