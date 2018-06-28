@@ -21,6 +21,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "curl/curl.h"
+#include "gtk/gtk.h"
 
 typedef struct changed_sites{
                 struct changed_sites *px_next;
@@ -51,7 +52,7 @@ static void v_freeAll(Changed_sites *px_site)
  *@param ppx_sites    head of the linked list
  *@param pc_string    url to add to the linked list
  */
-void v_createLinkedList(Changed_sites **ppx_sites, char *pc_name, char *pc_string)
+static void v_createLinkedList(Changed_sites **ppx_sites, char *pc_name, char *pc_string)
 {
     if(NULL == *ppx_sites)
     {
@@ -69,8 +70,8 @@ void v_createLinkedList(Changed_sites **ppx_sites, char *pc_name, char *pc_strin
             {
                 strcpy((*ppx_sites)->pc_name, pc_name);
             }
-        }
-    }
+        }/*if(NULL != *ppx_sites)*/
+    }/*if(NULL == *ppx_sites)*/
     else
     {
         Changed_sites *px_sites = *ppx_sites;
@@ -79,18 +80,18 @@ void v_createLinkedList(Changed_sites **ppx_sites, char *pc_name, char *pc_strin
         if(NULL != px_sites->px_next)
         {
             px_sites->px_next->px_next = NULL;
-            (*ppx_sites)->pc_site = malloc(strlen(pc_string));
-            if( NULL != (*ppx_sites)->pc_site )
+            (*ppx_sites)->px_next->pc_site = malloc(strlen(pc_string));
+            if( NULL != (*ppx_sites)->px_next->pc_site )
             {
-                strcpy((*ppx_sites)->pc_site, pc_string);
+                strcpy((*ppx_sites)->px_next->pc_site, pc_string);
             }
-            (*ppx_sites)->pc_name = malloc(strlen(pc_name));
-            if( NULL != (*ppx_sites)->pc_name )
+            (*ppx_sites)->px_next->pc_name = malloc(strlen(pc_name));
+            if( NULL != (*ppx_sites)->px_next->pc_name )
             {
-                strcpy((*ppx_sites)->pc_name, pc_name);
+                strcpy((*ppx_sites)->px_next->pc_name, pc_name);
             }
-        }
-    }
+        }/*if(NULL != px_sites->px_next)*/
+    }/*else -- if(NULL == *ppx_sites)*/
 }/*v_createLinkedList*/
 
 /*@brief libcurl callback for downloading html to file
@@ -156,6 +157,71 @@ static void v_generateFileNameForUrl(char *pc_filename, char *pc_name)
     strcpy(&pc_filename[strlen(pc_filename)], ".html");
 }/*v_generateFileNameForUrl*/
 
+static void v_buttonClicked(GtkWidget *px_widget, gpointer data)
+{
+    Changed_sites *px_site = (Changed_sites *)data;
+    char pc_filename[512] = {0};
+    CURL *px_curlHandle;
+
+    gtk_show_uri(NULL , px_site->pc_site, GDK_CURRENT_TIME, NULL);
+
+    v_generateFileNameForUrl(pc_filename, px_site->pc_name);
+    FILE *pf_output = fopen(pc_filename, "w+");
+
+    /*initialize px_curlHandle*/
+    //curl_global_init(CURL_GLOBAL_ALL);
+    px_curlHandle = curl_easy_init();
+    
+    /*set the needed settings for px_curlHandle*/
+    curl_easy_setopt(px_curlHandle, CURLOPT_VERBOSE, 0L); /*display all debug prints*/
+    curl_easy_setopt(px_curlHandle, CURLOPT_NOPROGRESS, 1L); /*disable terminal statusbar*/
+    curl_easy_setopt(px_curlHandle, CURLOPT_WRITEFUNCTION, s_write_data);    /*set callback*/
+    curl_easy_setopt(px_curlHandle, CURLOPT_WRITEDATA, pf_output);    /*set the buffer file to download into*/
+    curl_easy_setopt(px_curlHandle, CURLOPT_URL, px_site->pc_site);    /*set the url to download*/
+    curl_easy_setopt(px_curlHandle, CURLOPT_TIMEOUT, 120);    /*time out after 2 minutes*/
+    CURLcode x_curlcode = curl_easy_perform(px_curlHandle);
+    switch(x_curlcode)
+    {
+        case CURLE_COULDNT_CONNECT:
+        case CURLE_COULDNT_RESOLVE_HOST:
+        case CURLE_COULDNT_RESOLVE_PROXY:
+            fprintf(stderr, "request failed; %s\n", curl_easy_strerror(x_curlcode));
+            exit(EXIT_FAILURE);
+        default:
+            break;
+    }/*switch(x_curlcode)*/
+}/*v_buttonClicked*/
+
+static void v_createGUI(GtkApplication  *x_app, gpointer x_data)
+{
+    GtkWidget *px_window = gtk_application_window_new(x_app);
+    GtkWidget *px_verticalContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    Changed_sites *px_sites = (Changed_sites*)x_data;
+
+    gtk_window_set_title(GTK_WINDOW(px_window), "DidItChange");
+    //gtk_window_set_default_size(GTK_WINDOW(px_window), 200,200);
+
+    while(NULL != px_sites)
+    {
+        GtkWidget *px_horizontalContainer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        GtkWidget *px_label;
+        GtkWidget *px_button;
+
+        px_label = gtk_label_new(px_sites->pc_name);
+        px_button = gtk_button_new_with_label("visit");
+        g_signal_connect(px_button, "clicked", G_CALLBACK(v_buttonClicked), px_sites);
+
+        gtk_box_pack_start(GTK_BOX(px_horizontalContainer), px_label, TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(px_horizontalContainer), px_button, FALSE, FALSE, 0);
+
+        gtk_container_add(GTK_CONTAINER(px_verticalContainer), px_horizontalContainer);
+        px_sites = px_sites->px_next;
+    }/*while(NULL != px_sites)*/
+
+    gtk_container_add(GTK_CONTAINER(px_window), px_verticalContainer);
+    gtk_widget_show_all(px_window);
+}/*v_createGUI*/
+
 int main(int argc, char **argv)
 {
     if(argc<2)
@@ -219,7 +285,7 @@ int main(int argc, char **argv)
             else if(0 == i_compareFiles(pf_buffer,pf_original))     /*file does exist and has changed*/
             {
                 v_createLinkedList(&px_sites, pc_name, pc_url);
-                rename("buffer.html", pc_filename);
+                //rename("buffer.html", pc_filename);
                 fclose(pf_original);
                 fclose(pf_buffer);
             }/*else if(0 == i_compareFiles(pf_buffer, pf_original))*/
@@ -237,12 +303,11 @@ int main(int argc, char **argv)
 
     if( NULL != px_sites)
     {
-      Changed_sites *px_current_print = px_sites;
-      for(; NULL != px_current_print; px_current_print = px_current_print->px_next)
-      {
-        printf("%s,%s\n", px_current_print->pc_name, px_current_print->pc_site);
-      }
-      v_freeAll(px_sites);
-    }
+        GtkApplication *x_app = gtk_application_new("personal.project.DidItChange", G_APPLICATION_FLAGS_NONE);
+        g_signal_connect(x_app, "activate", G_CALLBACK(v_createGUI), px_sites);
+        g_application_run(G_APPLICATION(x_app), 1, argv);
+        g_object_unref(x_app);
+        v_freeAll(px_sites);
+    }/*if( NULL != px_sites)*/
     return 0;
 }/*main*/
