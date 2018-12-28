@@ -163,7 +163,7 @@ static void v_buttonClicked(GtkWidget *px_widget, gpointer data)
     char pc_filename[512] = {0};
     CURL *px_curlHandle;
 
-    gtk_show_uri(NULL , px_site->pc_site, GDK_CURRENT_TIME, NULL);
+    gtk_show_uri_on_window(NULL , px_site->pc_site, GDK_CURRENT_TIME, NULL);
 
     v_generateFileNameForUrl(pc_filename, px_site->pc_name);
     FILE *pf_output = fopen(pc_filename, "w+");
